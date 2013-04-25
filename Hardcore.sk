@@ -1,0 +1,215 @@
+# Script by Dzikoysk
+# Nazwa skryptu: Ultimate Hardcore
+# Wersja skryptu 1.1
+ 
+ 
+options:
+        # Aby zmieni? ?wiat Hardocre nale?y zmieni? "Hardcore" na nazw? innego ?wiata w linijkach :
+        # ?wiat w kt�rym si? odrodzimy po ?mierci na ?wiecie Hardcore i ?wiat Hardcore
+        respawn: world
+        world: Hardcore
+        # Ile ma czeka? poszczeg�lna ranga po zgini?ciu na ?wiecie Hardcore
+        admin: 0 seconds
+        vip: 15 minutes
+        gracz: 30 minutes
+        # Tagi tabliczkek:
+        # Do teleportu, 1 linia
+        tag: [Teleport]
+        # Do teleportu na ?wiat Hardcore w 3 lini
+        tag2: Hardcore
+        # Do teleportu z powrotem na g?�wny ?wiat w 3 lini
+        tag3: Spawn
+        # Tag wiadomo?ci
+        mtag: &4[&6Hardcore&4]
+        # Alias komendy /hardcore
+        alias: hcore
+       
+ 
+       
+       
+#-----------------------------------------------------------------------#
+#                         Code - tu poni?ej nic ju? nie zmieniaj                                    #
+#-----------------------------------------------------------------------#
+ 
+#---------------#
+# Kod generalny #
+#---------------#
+       
+on death of player:
+        player is in "Hardcore"
+        wait a tick
+        clear {hardcore.location.%player%}
+        set {hardcore.%player%.time} to true
+ 
+on login:
+        if {hardcore.%player%.time} is true:
+                set {hardcore.login.%player%} to true
+ 
+on quit:
+        if {battle.%player%} is true:
+                if player is in "Hardcore":
+                        drop inventory of player at location of player
+ 
+on respawn:
+        player is in "Hardcore"
+        if {hardcorepvp.%player%.lastused} is 0:
+                set {pvp.%player%} to 0
+        if {hardcore.spawn.%player%} is true:
+                clear {hardcore.spawn.%player%}
+        {hardcore.%player%.time} is true:
+                if {hardcore.login.%player%} is true:
+                        wait 30 seconds
+                        set {hardcore.login.%player%} to false
+                else:
+                        wait 1 second
+                make player execute command "mv tp %player% {@respawn}"
+                wait 1 tick
+                clear {hardcore.location.%player%}
+                player has permission "hardcore.op":
+                        wait {@admin}
+                        clear {hardcore.%player%.time}
+                        message "{@mtag}&8 Mozesz sie znowu zalogowac na swiat hardcore!"
+                        stop trigger
+                player has permission "hardcore.vip":
+                        message "{@mtag}&8 Musisz odczekac 15 minut, aby znow wejsc na swiat hardcore!"
+                        wait {@vip}
+                        clear {hardcore.%player%.time}
+                        message "{@mtag}&8 Mozesz ponownie wejsc na swiat hardcore!"
+                        stop trigger
+                message "{@mtag}&8 Musisz odczekac 30 minut, aby znow wejsc na swiat hardcore!"
+                wait {@gracz}
+                clear {hardcore.%player%.time}
+                message "{@mtag}&8Mozesz sie znowu zalogowac na swiat hardcore!"
+                stop trigger
+ 
+ 
+#---------#
+# Komendy #
+#---------#
+ 
+command /hardcore [<text>]:
+        aliases: {@alias}
+        trigger:
+                if argument 1 is "dolacz":
+                        player has permissions "hardcore.join":
+                                if player is in "Hardcore":
+                                        send "{@mtag}&8 Jestes juz w swiecie hardcore."
+                                        stop trigger
+                                if {hardcore.%player%.time} is true:
+                                        send "{@mtag}&8 Musisz poczekac jeszcze przez pewien czas."
+                                        stop trigger
+                                if {hardcore.spawn.%player%} is not set:
+                                        set {hardcore.spawn.%player%} to true
+                                        set {hardcorepvp.%player%.lastused} to {pvp.%player%}
+                                        wait 1 tick
+                                        set {pvp.%player%} to 1
+                                make console execute command "mv tp %player% {@world}"
+                if argument 1 is "powrot":
+                        player has permissions "hardcore.back":
+                                player is in "Hardcore":
+                                        if {hardcorepvp.%player%.lastused} is 0:
+                                        set {pvp.%player%} to 0
+                                        send "{@mtag}&8 Prosze poczekac 3 sekundy."
+                                        wait 1 second
+                                        send "&83"
+                                        wait 1 second
+                                        send "&82"
+                                        wait 1 second
+                                        send "&81"
+                                        set variable {hardcore.location.%player%} to location of player
+                                        wait 1 tick
+                                        teleport the player to {spawn.%world%}
+                                        send "&6Teleportacja..."
+                if argument 1 is "setspawn1":
+                        player is in "Hardcore":
+                                player has permissions "hardcore.op.setspawn1":
+                                        make console execute command "mv setspawn"
+                                        send "{@mtag} &8Ustawiono glowny spawn!"
+                if argument 1 is "setspawn2":
+                        player has permissions "hardcore.op.setspawn2":
+                                player is in "Hardcore":
+                                        set {spawn.s2.%world%} to location of player
+                                        send "{@mtag} &8Ustawiono spawn swiata!"
+                if argument 1 is "spawn":
+                        player has permissions "hardcore.spawn1":
+                                player is in "Hardcore":
+                                        if {spawn.s2.%world%} is set:
+                                                teleport the player to {spawn.s2.%world%}
+                                                send "{@mtag} &8Teleport na spawn ..."
+                                        else:
+                                                send "{@mtag} &8Nie ustawiono spawnu tego swiata! Aby ustawic uzyj: &4/hardcore setspawn2"
+                if argument 1 is "stworz":
+                        player has permissions "hardcore.op.create":
+                                make console execute command "mv create {@world} normal"
+                                wait 5 second
+                                send "{@mtag} &8Stworzono swiat Hardcore!"
+                if argument 1 is "":
+                        player has permissions "hardcore.none":
+                                send "&4-&6-&4-&6-&4-&6-&4-&6-&4-&6-&4-&6-&4-&6-&4-&6-&4-&6-"
+                                send "&l&8Hardcore"
+                                send "&8/hardcore help"
+                                send "&4-&6-&4-&6-&4-&6-&4-&6-&4-&6-&4-&6-&4-&6-&4-&6-&4-&6-"
+                if argument 1 is "help":
+                        player has permissions "hardcore.none.help":
+                                send "&4------{@mtag}&4------"
+                                send "&6/spawn &8- Teleportuje na glowny spawn serwera"
+                                send "&6/hardcore dolacz &8- Teleportuje na mape hardcore"
+                                send "&6/hardcore spawn &8- Powrot na spawn mapy Hardcore"
+                                send "&6/hardcore powrot &8- Teleportuje na glowny spawn serwera"
+                                send "&4---------------------" 
+               
+command /spawn:
+        trigger:
+                if player is in "Hardcore":
+                        player has permissions "hardcore.spawn":
+                                make console execute command "mv tp %player% {@respawn}"
+                               
+       
+                               
+#------------------------#
+# Interaktywne tabliczki #
+#------------------------#
+ 
+ 
+on sign change:
+        line 1 is "{@tag}":
+                line 3 is "":
+                        cancel event
+                        send "&lBrakuje czegos w 3 lini"
+                wait 1 tick
+                line 1 is "{@tag}":
+                        send "{@mtag} &lStworzono portal na swiat Hardcore!"
+on break of sign:
+        line 1 is "{@tag}":
+                line 3 is "{@tag2}":
+                        send "{@mtag}&c Zniszczono portal!"
+on right click on sign:
+        line 1 of clicked block is "{@tag}":
+                line 3 of clicked block is "{@tag2}":
+                        make player execute command "/hardcore dolacz" 
+                       
+                       
+on sign change:
+        line 1 is "{@tag}":
+                line 3 is "":
+                        cancel event
+                        send "&lBrakuje czegos w 3 lini"
+                wait 1 tick
+                line 1 is "{@tag}":
+                        send "{@mtag} &lStworzono portal na glowny spawn!"
+on break of sign:
+        line 1 is "{@tag}":
+                line 3 is "{@tag2}":
+                        send "{@mtag}&c Zniszczono portal na spawn!"
+on right click on sign:
+        line 1 of clicked block is "{@tag}":
+                line 3 of clicked block is "{@tag3}":
+                        send "{@mtag}&8 Zaczekaj 3 sekundy"
+                        wait 1 second
+                        send "&83"
+                        wait 1 second
+                        send "&82"
+                        wait 1 second
+                        send "&81"
+                        wait 10 tick
+                        make player execute command "/spawn"
